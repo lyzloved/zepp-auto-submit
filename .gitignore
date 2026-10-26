@@ -1,0 +1,17 @@
+# Private local data
+config.json
+config.tmp
+logs/
+run_daily.cmd
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
