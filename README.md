@@ -63,6 +63,6 @@ py -3 zepp_auto.py unschedule
 
 ## Android APP
 
-仓库的 [`android-app/`](android-app/) 目录包含原生 Android 版本。当前版本为 1.5.1，最低支持 Android 6.0，提供输入框与滑块联动选择步数、单次提交、卡密兑换及状态检查、会员到期提醒、密码加密保存、提交动画和每 2 小时更新的每日一言。
+仓库的 [`android-app/`](android-app/) 目录包含原生 Android 版本。当前版本为 1.5.2，最低支持 Android 6.0，提供输入框与滑块联动选择步数、单次提交、卡密兑换及状态检查、会员到期提醒、密码加密保存、提交动画和每 2 小时更新的每日一言。
 
-可安装包位于 [`android-app/releases/StepSubmit-1.5.1.apk`](android-app/releases/StepSubmit-1.5.1.apk)。APK 使用项目本地开发签名构建，不代表 Zepp、微信或第三方网站官方发布。
+可安装包位于 [`android-app/releases/StepSubmit-1.5.2.apk`](android-app/releases/StepSubmit-1.5.2.apk)。APK 使用项目本地开发签名构建，不代表 Zepp、微信或第三方网站官方发布。

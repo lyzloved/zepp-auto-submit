@@ -178,8 +178,27 @@ public class MainActivity extends Activity {
         clear.setOnClickListener(v->{submitIndicator.pause();submitIndicator.setVisibility(View.GONE);vault.clear();remember.setChecked(false);account.setText("");password.setText("");resultTitle.setText("已清除");result.setText("本机保存的账号密码已删除。");});
         quotePanel=new QuotePanel(this);add(root,quotePanel,20);
         View space = new View(this); root.addView(space,new LinearLayout.LayoutParams(1,0,1));
+        LinearLayout versionRow=new LinearLayout(this);versionRow.setGravity(Gravity.CENTER);
+        String currentVersion;
+        try{currentVersion=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}
+        catch(android.content.pm.PackageManager.NameNotFoundException e){currentVersion="未知";}
+        TextView versionLabel=text("当前版本 v"+currentVersion,12,muted,false);
+        versionRow.addView(versionLabel,new LinearLayout.LayoutParams(-2,-2));
+        Button updateButton=new Button(this);updateButton.setText("版本更新");updateButton.setTextSize(12);updateButton.setTextColor(blue);updateButton.setAllCaps(false);
+        updateButton.setMinHeight(0);updateButton.setMinimumHeight(0);updateButton.setMinWidth(0);updateButton.setMinimumWidth(0);
+        updateButton.setPadding(dp(14),0,dp(14),0);updateButton.setBackground(bg(Color.rgb(240,244,249),20));
+        updateButton.setContentDescription("前往 GitHub 仓库下载最新版本");
+        FrameLayout updateTouch=new FrameLayout(this);
+        updateTouch.addView(updateButton,new FrameLayout.LayoutParams(dp(90),dp(36),Gravity.CENTER));
+        LinearLayout.LayoutParams updateParams=new LinearLayout.LayoutParams(dp(102),dp(48));updateParams.leftMargin=dp(8);versionRow.addView(updateTouch,updateParams);
+        View.OnClickListener openUpdates=v->{
+            try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://github.com/lyzloved/zepp-auto-submit/tree/main/android-app/releases")));}
+            catch(android.content.ActivityNotFoundException e){Toast.makeText(this,"未找到浏览器，请安装浏览器后重试。",Toast.LENGTH_LONG).show();}
+        };
+        updateButton.setOnClickListener(openUpdates);updateTouch.setOnClickListener(openUpdates);
+        add(root,versionRow,16);
         TextView developer=text("开发人员：π",12,muted,false);
-        developer.setGravity(Gravity.CENTER); add(root,developer,24);
+        developer.setGravity(Gravity.CENTER); add(root,developer,4);
         steps.setText(Integer.toString(getPreferences(MODE_PRIVATE).getInt("steps",15570)));
         try { JSONObject saved=vault.load();if(saved!=null){account.setText(saved.optString("account"));password.setText(saved.optString("password"));remember.setChecked(true);} }
         catch(Exception e){vault.clear();result.setText("保存的信息无法解密，请重新输入。");}

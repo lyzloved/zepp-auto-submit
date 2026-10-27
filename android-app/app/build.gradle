@@ -2,6 +2,6 @@ plugins { id 'com.android.application' }
 android {
     namespace 'cn.steps.simple'
     compileSdk 35
-    defaultConfig { applicationId 'cn.steps.simple'; minSdk 23; targetSdk 35; versionCode 8; versionName '1.5.1' }
+    defaultConfig { applicationId 'cn.steps.simple'; minSdk 23; targetSdk 35; versionCode 9; versionName '1.5.2' }
     compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
 }
