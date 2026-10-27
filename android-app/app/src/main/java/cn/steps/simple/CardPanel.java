@@ -5,7 +5,6 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.*;
-import android.text.InputType;
 import android.view.*;
 import android.widget.*;
 import java.util.*;
@@ -31,19 +30,21 @@ final class CardPanel extends LinearLayout {
     private final Runnable ticker=new Runnable(){public void run(){if(!active||destroyed)return;refresh(false);main.postDelayed(this,30000);}};
     CardPanel(Context context,Redeemer redeemer){
         super(context);this.redeemer=redeemer;vault=new Vault(context,"private_cards_v1");
-        setOrientation(VERTICAL);setPadding(dp(16),dp(14),dp(16),dp(12));setBackground(bg(0xfff0f4f9,20));
+        setOrientation(VERTICAL);setPadding(dp(18),dp(16),dp(18),dp(12));setBackground(bg(0xfff0f4f9,20));
         LinearLayout head=new LinearLayout(context);head.setGravity(Gravity.CENTER_VERTICAL);
         TextView title=text("我的卡密",14,0xff1f1f1f);head.addView(title,new LinearLayout.LayoutParams(0,-2,1));
         refresh=button("刷新");head.addView(refresh,new LinearLayout.LayoutParams(dp(68),dp(48)));addView(head);
         summary=text("最多 5 张 · 前台每 30 秒校验",11,0xff5f6368);addView(summary);
         rows=new LinearLayout(context);rows.setOrientation(VERTICAL);addView(rows,new LinearLayout.LayoutParams(-1,-2));
-        LinearLayout actions=new LinearLayout(context);
-        Button add=button("添加已有卡密");actions.addView(add,new LinearLayout.LayoutParams(0,dp(48),1));
-        claim=button("领取网站卡密");actions.addView(claim,new LinearLayout.LayoutParams(0,dp(48),1));addView(actions);
-        addView(text("按网站规则领取；仅展示你领取或添加的卡密。",11,0xff5f6368));
-        add.setOnClickListener(v->showImport());refresh.setOnClickListener(v->refresh(true));claim.setOnClickListener(v->confirmClaim());
+        FrameLayout actions=new FrameLayout(context);
+        claim=button("领取卡密");claim.setBackground(bg(0xffdce8ff,18));claim.setMinHeight(0);claim.setMinimumHeight(0);
+        actions.addView(claim,new FrameLayout.LayoutParams(dp(104),dp(36),Gravity.CENTER));
+        LinearLayout.LayoutParams actionParams=new LinearLayout.LayoutParams(-1,dp(48));actionParams.topMargin=dp(10);addView(actions,actionParams);
+        actions.setOnClickListener(v->{if(claim.isEnabled())confirmClaim();});
+        TextView hint=text("领取规则以网站为准",11,0xff5f6368);hint.setGravity(Gravity.CENTER);addView(hint);
+        refresh.setOnClickListener(v->refresh(true));claim.setOnClickListener(v->confirmClaim());
         try{JSONObject data=vault.load();if(data!=null){JSONArray a=data.optJSONArray("cards");if(a!=null)for(int i=0;i<a.length()&&entries.size()<LIMIT;i++){String key=Redemption.normalize(a.optString(i));if(!key.isEmpty()){entries.put(key,CardStatus.UNKNOWN);labels.put(key,"待校验");}}}}
-        catch(Exception e){summary.setText("本机卡密读取失败，请重新添加。");}
+        catch(Exception e){summary.setText("本机卡密暂时无法读取，请稍后重启应用。");}
         render();
     }
     private int dp(int n){return (int)(getResources().getDisplayMetrics().density*n+.5f);}
@@ -53,7 +54,7 @@ final class CardPanel extends LinearLayout {
     private void save(){try{JSONArray a=new JSONArray();for(String key:entries.keySet())if(entries.get(key)!=CardStatus.USED)a.put(key);vault.saveObject(new JSONObject().put("cards",a));}catch(Exception e){summary.setText("卡密仅暂存在当前页面，保存失败。");}}
     private void render(){
         if(destroyed)return;rows.removeAllViews();
-        if(entries.isEmpty()){TextView empty=text("暂无卡密，领取或添加后显示网站真实状态。",12,0xff5f6368);empty.setPadding(0,dp(12),0,dp(8));rows.addView(empty);}
+        if(entries.isEmpty()){TextView empty=text("暂无卡密，领取后自动显示真实状态。",12,0xff5f6368);empty.setGravity(Gravity.CENTER);empty.setPadding(0,dp(18),0,dp(12));rows.addView(empty);}
         for(String key:new ArrayList<>(entries.keySet())){
             int state=entries.get(key);LinearLayout row=new LinearLayout(getContext());row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(10),dp(6),dp(4),dp(6));row.setBackground(bg(Color.WHITE,14));
             LinearLayout content=new LinearLayout(getContext());content.setOrientation(VERTICAL);
@@ -69,21 +70,9 @@ final class CardPanel extends LinearLayout {
         }
         claim.setEnabled(!claiming&&!checking&&entries.size()<LIMIT);refresh.setEnabled(!checking&&!claiming);
     }
-    private void showImport(){
-        EditText input=new EditText(getContext());input.setHint("每行一张，最多 5 张");input.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);input.setMinLines(2);input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(4096)});
-        if(Build.VERSION.SDK_INT>=26)input.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
-        AlertDialog dialog=new AlertDialog.Builder(getContext()).setTitle("添加已有卡密").setView(input).setNegativeButton("取消",null).setPositiveButton("添加",null).create();
-        dialog.setOnDismissListener(d->input.setText(""));dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{
-            LinkedHashSet<String> keys=new LinkedHashSet<>();for(String line:input.getText().toString().split("\\r?\\n")){String key=Redemption.normalize(line);if(!key.isEmpty())keys.add(key);}
-            int extra=0;for(String key:keys)if(!entries.containsKey(key))extra++;
-            if(keys.isEmpty()||extra+entries.size()>LIMIT){input.setError("请输入卡密，列表合计最多 5 张");return;}
-            for(String key:keys)if(!entries.containsKey(key)){entries.put(key,CardStatus.UNKNOWN);labels.put(key,"待校验");}
-            save();render();dialog.dismiss();refresh(true);
-        }));dialog.show();
-    }
     private void confirmClaim(){
         if(claiming||checking||entries.size()>=LIMIT)return;
-        new AlertDialog.Builder(getContext()).setTitle("领取网站卡密").setMessage("按原网站规则领取一张。网站目前提示每人 30 天限领一张；点击后会消耗本次领取机会。").setNegativeButton("取消",null).setPositiveButton("领取一张",(d,w)->claim()).show();
+        new AlertDialog.Builder(getContext()).setTitle("领取卡密").setMessage("按原网站规则领取一张。网站目前提示每人 30 天限领一张；点击后会消耗本次领取机会。").setNegativeButton("取消",null).setPositiveButton("领取一张",(d,w)->claim()).show();
     }
     private void claim(){
         if(claiming||destroyed||entries.size()>=LIMIT)return;claiming=true;render();summary.setText("正在领取一张，请稍候…");

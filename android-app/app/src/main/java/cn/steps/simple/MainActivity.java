@@ -21,7 +21,7 @@ public class MainActivity extends Activity {
     private final int blue = Color.rgb(11,87,208), ink = Color.rgb(31,31,31), muted = Color.rgb(95,99,104);
     private EditText account, password, steps;
     private ImageButton eye;
-    private Button redeem;
+    private SeekBar stepSlider;
     private boolean passwordVisible=false;
     private TextView result, resultTitle;
     private SubmitIndicator submitIndicator;
@@ -78,8 +78,8 @@ public class MainActivity extends Activity {
         });
         setContentView(scroll);
         add(root,text("步数助手",14,blue,true),0);
-        add(root,text("轻松同步每一步",28,ink,false),16);
-        add(root,text("设置目标步数，点击即可提交",14,muted,false),6);
+        add(root,text("轻松同步每一步",26,ink,false),12);
+        add(root,text("设置目标步数，点击即可提交",13,muted,false),6);
         LinearLayout card = column(); card.setPadding(0,0,0,0); add(root,card,12);
         label(card,"Zepp 账号"); account = input("邮箱 / 手机号",InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS); add(card,account,8);
         label(card,"密码");
@@ -98,6 +98,34 @@ public class MainActivity extends Activity {
         eye.setOnClickListener(v->setPasswordVisible(!passwordVisible)); add(card,passrow,8);
         label(card,"目标步数"); steps = input("1–98800",InputType.TYPE_CLASS_NUMBER); steps.setTextSize(34); steps.setTypeface(Typeface.DEFAULT,Typeface.BOLD); steps.setTextColor(blue);
         steps.setFilters(new InputFilter[]{new InputFilter.LengthFilter(6)}); add(card,steps,8);
+        stepSlider=new SeekBar(this);stepSlider.setMax(98799);stepSlider.setMinHeight(dp(48));
+        stepSlider.setContentDescription("拖动选择目标步数，范围 1 至 98800 步");
+        stepSlider.setProgressTintList(android.content.res.ColorStateList.valueOf(blue));
+        stepSlider.setThumbTintList(android.content.res.ColorStateList.valueOf(blue));
+        add(card,stepSlider,4);
+        LinearLayout stepRange=new LinearLayout(this);
+        TextView minimum=text("1 步",11,muted,false),maximum=text("98,800 步",11,muted,false);
+        maximum.setGravity(Gravity.END);
+        stepRange.addView(minimum,new LinearLayout.LayoutParams(0,-2,1));
+        stepRange.addView(maximum,new LinearLayout.LayoutParams(0,-2,1));add(card,stepRange,0);
+        stepSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onProgressChanged(SeekBar bar,int progress,boolean fromUser){
+                if(fromUser){steps.setText(Integer.toString(progress+1));steps.setSelection(steps.length());}
+            }
+            public void onStartTrackingTouch(SeekBar bar){
+                ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(steps.getWindowToken(),0);
+                steps.clearFocus();
+            }
+            public void onStopTrackingTouch(SeekBar bar){}
+        });
+        steps.addTextChangedListener(new TextWatcher(){
+            public void beforeTextChanged(CharSequence value,int start,int count,int after){}
+            public void onTextChanged(CharSequence value,int start,int before,int count){
+                try{int n=Integer.parseInt(value.toString());if(n>=1&&n<=98800)stepSlider.setProgress(n-1);}
+                catch(NumberFormatException ignored){}
+            }
+            public void afterTextChanged(Editable value){}
+        });
         remember = new CheckBox(this); remember.setText("加密记住账号和密码");remember.setTextSize(13);remember.setTextColor(muted);add(card,remember,14);
         remember.setOnCheckedChangeListener((v,checked)->{if(!checked)vault.clear();});
         submit = new Button(this);submit.setText("立即提交");submit.setTextSize(16);submit.setTextColor(Color.WHITE);submit.setAllCaps(false);submit.setBackground(bg(blue,28));submit.setMinHeight(dp(56));add(card,submit,12);submit.setOnClickListener(v->startSubmit());
@@ -106,11 +134,10 @@ public class MainActivity extends Activity {
         LinearLayout membershipCard = column();
         membershipCard.setBackground(bg(Color.rgb(240,244,249),20));
         membershipCard.setPadding(dp(18),dp(16),dp(18),dp(12));
-        add(root,membershipCard,24);
+        add(root,membershipCard,20);
         membershipTitle=text("卡密有效期",15,ink,true);
         membershipDetail=text("查询账号已兑换的会员权益，到期检查无需密码。",13,muted,false);
         membershipDetail.setLineSpacing(dp(3),1);
-        add(membershipCard,membershipTitle,0); add(membershipCard,membershipDetail,6);
         checkExpiry=new Button(this); checkExpiry.setText("重新检查"); checkExpiry.setTextColor(blue);
         checkExpiry.setTextSize(12); checkExpiry.setAllCaps(false);
         checkExpiry.setBackground(bg(Color.rgb(220,232,255),18));checkExpiry.setMinHeight(0);checkExpiry.setMinimumHeight(0);checkExpiry.setPadding(dp(10),0,dp(10),0);
@@ -118,15 +145,10 @@ public class MainActivity extends Activity {
         FrameLayout checkTouch=new FrameLayout(this);
         checkTouch.addView(checkExpiry,new FrameLayout.LayoutParams(dp(90),dp(34),Gravity.CENTER));
         checkTouch.setOnClickListener(v->checkMembership(true));
+        actions.addView(membershipTitle,new LinearLayout.LayoutParams(0,-2,1));
         actions.addView(checkTouch,new LinearLayout.LayoutParams(dp(100),dp(48)));
         checkExpiry.setOnClickListener(v->checkMembership(true));
-        redeem=new Button(this);redeem.setText("兑换卡密");redeem.setTextColor(blue);redeem.setTextSize(12);
-        redeem.setAllCaps(false);redeem.setBackground(bg(Color.rgb(220,232,255),18));redeem.setMinHeight(0);redeem.setMinimumHeight(0);redeem.setPadding(dp(10),0,dp(10),0);
-        FrameLayout redeemTouch=new FrameLayout(this);
-        redeemTouch.addView(redeem,new FrameLayout.LayoutParams(dp(90),dp(34),Gravity.CENTER));
-        redeemTouch.setOnClickListener(v->{if(!busy)showRedemption();});
-        LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(dp(100),dp(48));rp.leftMargin=dp(10);actions.addView(redeemTouch,rp);
-        redeem.setOnClickListener(v->showRedemption());add(membershipCard,actions,12);
+        add(membershipCard,actions,0);add(membershipCard,membershipDetail,6);
         account.setOnFocusChangeListener((v,hasFocus)->{if(!hasFocus)checkMembership(false);});
         account.addTextChangedListener(new TextWatcher(){
             public void beforeTextChanged(CharSequence s,int a,int c,int f){}
@@ -160,7 +182,6 @@ public class MainActivity extends Activity {
         if(start>=0&&end>=0)password.setSelection(Math.min(start,password.length()),Math.min(end,password.length()));
         eye.setImageDrawable(new EyeDrawable(visible));eye.setContentDescription(visible?"隐藏密码":"显示密码");
     }
-    private void showRedemption(){showRedemption("");}
     private void showRedemption(String initialCard) {
         if(busy)return;
         final String user=account.getText().toString().trim(),pass=password.getText().toString();
@@ -208,7 +229,7 @@ public class MainActivity extends Activity {
         dialog.show();
     }
     private void setBusy(boolean active) {
-        busy=active;submit.setEnabled(!active);submit.setText(active?"正在提交…":"立即提交");account.setEnabled(!active);password.setEnabled(!active);steps.setEnabled(!active);eye.setEnabled(!active);redeem.setEnabled(!active);remember.setEnabled(!active);clear.setEnabled(!active);
+        busy=active;submit.setEnabled(!active);submit.setText(active?"正在提交…":"立即提交");account.setEnabled(!active);password.setEnabled(!active);steps.setEnabled(!active);stepSlider.setEnabled(!active);eye.setEnabled(!active);remember.setEnabled(!active);clear.setEnabled(!active);
     }
     private String redact(String s,String user,String pass) {
         if(!pass.isEmpty())s=s.replace(pass,"[密码已隐藏]");if(!user.isEmpty())s=s.replace(user,"[账号已隐藏]");return s.length()>1200?s.substring(0,1200):s;
