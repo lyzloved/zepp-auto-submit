@@ -22,6 +22,7 @@ public class MainActivity extends Activity {
     private EditText account, password, steps;
     private ImageButton eye;
     private SeekBar stepSlider;
+    private TextView selectedSteps,remainingSteps;
     private boolean passwordVisible=false;
     private TextView result, resultTitle;
     private SubmitIndicator submitIndicator;
@@ -98,18 +99,26 @@ public class MainActivity extends Activity {
         eye.setOnClickListener(v->setPasswordVisible(!passwordVisible)); add(card,passrow,8);
         label(card,"目标步数"); steps = input("1–98800",InputType.TYPE_CLASS_NUMBER); steps.setTextSize(34); steps.setTypeface(Typeface.DEFAULT,Typeface.BOLD); steps.setTextColor(blue);
         steps.setFilters(new InputFilter[]{new InputFilter.LengthFilter(6)}); add(card,steps,8);
-        stepSlider=new SeekBar(this);stepSlider.setMax(98799);stepSlider.setMinHeight(dp(48));
+        stepSlider=new SeekBar(this);stepSlider.setMax(98799);stepSlider.setMinHeight(dp(56));
         stepSlider.setContentDescription("拖动选择目标步数，范围 1 至 98800 步");
-        stepSlider.setProgressTintList(android.content.res.ColorStateList.valueOf(blue));
-        stepSlider.setThumbTintList(android.content.res.ColorStateList.valueOf(blue));
+        stepSlider.setProgressDrawable(new StepTrackDrawable(getResources().getDisplayMetrics().density));
+        stepSlider.setProgressTintList(null);stepSlider.setSplitTrack(false);stepSlider.setPadding(dp(16),0,dp(16),0);
+        GradientDrawable thumb=new GradientDrawable();thumb.setShape(GradientDrawable.OVAL);
+        thumb.setColor(Color.WHITE);thumb.setStroke(dp(4),blue);thumb.setSize(dp(28),dp(28));
+        stepSlider.setThumb(thumb);stepSlider.setThumbTintList(null);stepSlider.setThumbOffset(dp(14));
         add(card,stepSlider,4);
         LinearLayout stepRange=new LinearLayout(this);
-        TextView minimum=text("1 步",11,muted,false),maximum=text("98,800 步",11,muted,false);
-        maximum.setGravity(Gravity.END);
-        stepRange.addView(minimum,new LinearLayout.LayoutParams(0,-2,1));
-        stepRange.addView(maximum,new LinearLayout.LayoutParams(0,-2,1));add(card,stepRange,0);
+        selectedSteps=text("当前 1 步",12,blue,true);remainingSteps=text("还差 98,799 步",12,muted,false);
+        selectedSteps.setGravity(Gravity.CENTER_VERTICAL);remainingSteps.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);
+        selectedSteps.setMinHeight(dp(40));remainingSteps.setMinHeight(dp(40));
+        selectedSteps.setContentDescription("点击选择最小值 1 步");remainingSteps.setContentDescription("点击选择最大值 98800 步");
+        selectedSteps.setOnClickListener(v->{if(!busy)steps.setText("1");});
+        remainingSteps.setOnClickListener(v->{if(!busy)steps.setText("98800");});
+        stepRange.addView(selectedSteps,new LinearLayout.LayoutParams(0,-2,1));
+        stepRange.addView(remainingSteps,new LinearLayout.LayoutParams(0,-2,1));add(card,stepRange,0);
         stepSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
             public void onProgressChanged(SeekBar bar,int progress,boolean fromUser){
+                updateStepLabels(progress+1);
                 if(fromUser){steps.setText(Integer.toString(progress+1));steps.setSelection(steps.length());}
             }
             public void onStartTrackingTouch(SeekBar bar){
@@ -121,7 +130,7 @@ public class MainActivity extends Activity {
         steps.addTextChangedListener(new TextWatcher(){
             public void beforeTextChanged(CharSequence value,int start,int count,int after){}
             public void onTextChanged(CharSequence value,int start,int before,int count){
-                try{int n=Integer.parseInt(value.toString());if(n>=1&&n<=98800)stepSlider.setProgress(n-1);}
+                try{int n=Integer.parseInt(value.toString());if(n>=1&&n<=98800){stepSlider.setProgress(n-1);updateStepLabels(n);}}
                 catch(NumberFormatException ignored){}
             }
             public void afterTextChanged(Editable value){}
@@ -174,6 +183,12 @@ public class MainActivity extends Activity {
         steps.setText(Integer.toString(getPreferences(MODE_PRIVATE).getInt("steps",15570)));
         try { JSONObject saved=vault.load();if(saved!=null){account.setText(saved.optString("account"));password.setText(saved.optString("password"));remember.setChecked(true);} }
         catch(Exception e){vault.clear();result.setText("保存的信息无法解密，请重新输入。");}
+    }
+    private void updateStepLabels(int value){
+        selectedSteps.setText(String.format(Locale.CHINA,"当前 %,d 步",value));
+        remainingSteps.setText(value==98800?"已达 98,800 步":String.format(Locale.CHINA,"还差 %,d 步",98800-value));
+        remainingSteps.setTextColor(value==98800?blue:muted);
+        selectedSteps.setTypeface(Typeface.DEFAULT,value==1?Typeface.BOLD:Typeface.NORMAL);
     }
     private void setPasswordVisible(boolean visible) {
         passwordVisible=visible;
