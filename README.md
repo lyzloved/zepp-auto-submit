@@ -60,3 +60,9 @@ py -3 zepp_auto.py unschedule
 ## 兼容和测试范围
 
 网页表单的定位依据是已公开索引中的 `请输入ZEPP账号`、`请输入ZEPP密码`、`请输入同步步数`、`立即提交`。目前只做了离线浏览器表单测试与语法检查，**未对 zepp.net.cn 提交真实账号请求**。
+
+## Android APP
+
+仓库的 [`android-app/`](android-app/) 目录包含原生 Android 版本。当前版本为 1.4.1，最低支持 Android 6.0，提供步数单次提交、卡密兑换及状态检查、会员到期提醒、密码加密保存、提交动画和每 2 小时更新的每日一言。
+
+可安装包位于 [`android-app/releases/StepSubmit-1.4.1.apk`](android-app/releases/StepSubmit-1.4.1.apk)。APK 使用项目本地开发签名构建，不代表 Zepp、微信或第三方网站官方发布。
